@@ -1,35 +1,34 @@
-function getDefinition() {
-    const wordInput = document.getElementById('wordInput').value.trim();
-    const definitionOutput = document.getElementById('definitionOutput');
+const wordInput = document.getElementById('wordInput');
+const definitionOutput = document.getElementById('definitionOutput');
 
-    if (wordInput === '') {
+wordInput.addEventListener('input', fetchDefinitions);
+
+async function fetchDefinitions() {
+    const word = wordInput.value.trim();
+    if (word === '') {
         definitionOutput.innerHTML = '';
         return;
     }
 
-    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordInput}`;
-
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.title === 'No Definitions Found') {
-                definitionOutput.innerHTML = `No definitions found for "${wordInput}".`;
-            } else {
-                let definitions = '<ol>'; 
-                data[0].meanings.forEach(meaning => {
-                    meaning.definitions.forEach(definition => {
-                        definitions += `<li>${definition.definition}</li>`; 
-                    });
-                });
-                definitions += '</ol>';
-                definitionOutput.innerHTML = definitions;
-            }
-        })
-        .catch(error => {
-            definitionOutput.innerHTML = `An error occurred: ${error}`;
-        });
+    try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        renderDefinitions(data);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        definitionOutput.innerHTML = '<li>Error fetching data. Please try again later.</li>';
+    }
 }
 
-document.getElementById('wordInput').addEventListener('input', getDefinition);
-
-getDefinition();
+function renderDefinitions(data) {
+    definitionOutput.innerHTML = data.map(entry => {
+        return entry.meanings.map(meaning => {
+            return meaning.definitions.map(def => {
+                return `<li><strong>${meaning.partOfSpeech}</strong>: ${def.definition}</li>`;
+            }).join('');
+        }).join('');
+    }).join('');
+}
